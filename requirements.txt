@@ -1,0 +1,23 @@
+# Production Dependencies for GenAI Shopping Assistant
+
+# Core API Framework & Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+python-dotenv>=1.0.0
+
+# Data Processing & Numerical Computing
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Vector Embeddings & Similarity Search
+sentence-transformers>=3.0.0
+faiss-cpu>=1.8.0
+torch>=2.2.0
+
+# GenAI & LLM Providers
+groq>=0.9.0
+
+# Testing & Client Verification
+pytest>=8.0.0
+httpx>=0.27.0

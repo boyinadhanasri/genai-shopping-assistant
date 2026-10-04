@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shelfie — GenAI Shopping Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LEFT RAIL -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <span class="rail-brand-mark">⌁</span>
+      <span class="rail-brand-name">Shelfie</span>
+    </div>
+
+    <button class="rail-newchat" id="newSearchBtn">New search</button>
+
+    <div class="rail-section">
+      <p class="rail-label">Categories</p>
+      <div class="chip-row" id="categoryChips">
+        <button class="chip is-active" data-category="Electronics">Electronics</button>
+        <button class="chip" data-category="Mobiles">Mobiles</button>
+        <button class="chip" data-category="Appliances">Appliances</button>
+        <button class="chip" data-category="Home & Kitchen">Home &amp; Kitchen</button>
+        <button class="chip" data-category="Fashion">Fashion</button>
+        <button class="chip" data-category="Beauty">Beauty</button>
+        <button class="chip" data-category="Sports">Sports</button>
+        <button class="chip" data-category="Toys">Toys</button>
+      </div>
+    </div>
+
+    <div class="rail-section rail-section--grow">
+      <p class="rail-label">Session</p>
+      <ul class="history-list" id="historyList">
+        <!-- history entries injected here -->
+      </ul>
+    </div>
+
+    <div class="rail-footer">
+      <span class="pulse-dot" id="dataPulse"></span>
+      <span id="dataFreshness">Flipkart sample dataset · 8 categories</span>
+    </div>
+  </aside>
+
+  <!-- CENTER: CONVERSATION -->
+  <main class="thread-col">
+    <header class="thread-header">
+      <div>
+        <h1>Ask for what you actually want</h1>
+        <p>Describe a need in plain words — budget, use case, dealbreakers. Compare anything you find.</p>
+      </div>
+    </header>
+
+    <div class="thread" id="thread">
+      <!-- messages injected here -->
+    </div>
+
+    <form class="composer" id="composerForm">
+      <input
+        type="text"
+        id="composerInput"
+        placeholder="e.g. A good phone under ₹20,000 with a long battery life"
+        autocomplete="off"
+      />
+      <button type="submit" class="composer-send">Send</button>
+    </form>
+  </main>
+
+  <!-- RIGHT: COMPARE TRAY -->
+  <aside class="tray" id="compareTray">
+    <div class="tray-header">
+      <p class="tray-title">Compare tray</p>
+      <span class="tray-count" id="trayCount">0</span>
+    </div>
+    <div class="tray-empty" id="trayEmpty">
+      <p>Tag two or more products with <strong>Compare</strong> and they'll line up here.</p>
+    </div>
+    <div class="tray-table-wrap" id="trayTableWrap" hidden>
+      <table class="tray-table" id="trayTable"></table>
+    </div>
+    <button class="tray-clear" id="trayClear" hidden>Clear tray</button>
+  </aside>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
