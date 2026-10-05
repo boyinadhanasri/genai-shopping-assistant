@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://genai-shopping-assistant-backend.onrender.com/api/$1"
+      "destination": "https://genai-shopping-assistant-3.onrender.com/api/$1"
     }
   ]
 }

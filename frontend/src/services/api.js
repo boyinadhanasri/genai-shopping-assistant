@@ -3,7 +3,8 @@
  * Connects to FastAPI backend on http://127.0.0.1:8000
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://genai-shopping-assistant-3.onrender.com';
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 class ApiService {
   constructor() {
