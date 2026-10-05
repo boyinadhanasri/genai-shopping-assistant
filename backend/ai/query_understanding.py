@@ -317,6 +317,10 @@ SUBCATEGORY_MAP: Dict[str, tuple] = {
     # =========================================================================
     # ELECTRONICS, LAPTOPS, SMARTPHONES, CAMERAS, AUDIO
     # =========================================================================
+    "electronics": ("Electronics", None),
+    "electronic": ("Electronics", None),
+    "gadget": ("Electronics", None),
+    "gadgets": ("Electronics", None),
     "laptop": ("Laptops", "Laptop"),
     "laptops": ("Laptops", "Laptop"),
     "notebook": ("Laptops", "Laptop"),
@@ -331,8 +335,11 @@ SUBCATEGORY_MAP: Dict[str, tuple] = {
     "phone": ("Smartphones", "Smartphone"),
     "phones": ("Smartphones", "Smartphone"),
     "camera phone": ("Smartphones", "Smartphone"),
+    "camera phones": ("Smartphones", "Smartphone"),
     "gaming phone": ("Smartphones", "Smartphone"),
+    "gaming phones": ("Smartphones", "Smartphone"),
     "5g phone": ("Smartphones", "Smartphone"),
+    "5g phones": ("Smartphones", "Smartphone"),
     "mobile": ("Smartphones", "Smartphone"),
     "mobiles": ("Smartphones", "Smartphone"),
     "iphone": ("Smartphones", "Smartphone"),
@@ -370,6 +377,13 @@ SUBCATEGORY_MAP: Dict[str, tuple] = {
     # =========================================================================
     # FASHION & SHOES
     # =========================================================================
+    # =========================================================================
+    # FASHION & SHOES
+    # =========================================================================
+    "fashion": ("Fashion", None),
+    "clothing": ("Fashion", None),
+    "clothes": ("Fashion", None),
+    "apparel": ("Fashion", None),
     "shoe": ("Shoes", "Shoes"),
     "shoes": ("Shoes", "Shoes"),
     "sneaker": ("Shoes", "Shoes"),
@@ -401,6 +415,10 @@ SUBCATEGORY_MAP: Dict[str, tuple] = {
     # =========================================================================
     # BEAUTY & PERSONAL CARE
     # =========================================================================
+    "beauty": ("Beauty", None),
+    "skincare": ("Beauty", None),
+    "cosmetics": ("Beauty", None),
+    "makeup": ("Beauty", None),
     "face wash": ("Beauty", "Face Wash"),
     "facewash": ("Beauty", "Face Wash"),
     "cleanser": ("Beauty", "Face Wash"),
@@ -474,17 +492,17 @@ def rule_based_query_understanding(query: str, category_hint: Optional[str] = No
 
     # 2. Pure Category Inquiry Triggers (e.g. "Home & Kitchen", "Books", "Sports", "Laptops", "Smartphones", "Shoes")
     category_triggers = {
-        "Home & Kitchen": ["home & kitchen", "home and kitchen", "home", "kitchen", "cookware", "appliances", "home decor"],
-        "Books": ["books", "book", "reading", "study books", "novels"],
-        "Sports": ["sports", "sport", "fitness", "gym equipment", "workout gear"],
-        "Laptops": ["laptops", "laptop", "need a laptop", "looking for a laptop", "buy laptop", "notebook pc"],
-        "Smartphones": ["smartphones", "smartphone", "phones", "phone", "need a phone", "looking for a phone", "buy phone", "mobiles", "mobile"],
-        "Shoes": ["shoes", "shoe", "need shoes", "footwear", "sneakers", "buy shoes"],
+        "Home & Kitchen": ["home & kitchen", "home and kitchen", "home", "kitchen"],
+        "Books": ["books", "reading", "study books"],
+        "Sports": ["sports", "sport", "fitness", "workout gear"],
+        "Laptops": ["laptops", "need a laptop", "looking for a laptop", "buy laptop"],
+        "Smartphones": ["smartphones", "need a phone", "looking for a phone", "buy phone"],
+        "Shoes": ["shoes", "need shoes", "footwear", "buy shoes"],
         "Fashion": ["fashion", "clothing", "apparel", "clothes", "wear"],
         "Beauty": ["beauty", "skincare", "cosmetics", "makeup"],
-        "Audio": ["audio", "earbuds", "headphones", "sound"],
-        "Cameras": ["cameras", "camera", "dslr"],
-        "Toys": ["toys", "toy", "games", "toys & games"],
+        "Audio": ["audio", "sound"],
+        "Cameras": ["cameras", "dslr"],
+        "Toys": ["toys", "toys & games"],
     }
 
     for cat_name, triggers in category_triggers.items():
@@ -589,7 +607,8 @@ def rule_based_query_understanding(query: str, category_hint: Optional[str] = No
         tri = f"{clean_query_words[i]} {clean_query_words[i+1]} {clean_query_words[i+2]}"
         if tri in SUBCATEGORY_MAP:
             detected_category, detected_subcategory = SUBCATEGORY_MAP[tri]
-            has_specific_product = True
+            if detected_subcategory is not None:
+                has_specific_product = True
             break
 
     # 2-grams
@@ -598,7 +617,8 @@ def rule_based_query_understanding(query: str, category_hint: Optional[str] = No
             bi = f"{clean_query_words[i]} {clean_query_words[i+1]}"
             if bi in SUBCATEGORY_MAP:
                 detected_category, detected_subcategory = SUBCATEGORY_MAP[bi]
-                has_specific_product = True
+                if detected_subcategory is not None:
+                    has_specific_product = True
                 break
 
     # 1-grams
@@ -606,8 +626,10 @@ def rule_based_query_understanding(query: str, category_hint: Optional[str] = No
         for word in clean_query_words:
             if word in SUBCATEGORY_MAP:
                 detected_category, detected_subcategory = SUBCATEGORY_MAP[word]
-                has_specific_product = True
+                if detected_subcategory is not None:
+                    has_specific_product = True
                 break
+
 
     if not detected_category and category_hint:
         detected_category = normalize_category_name(category_hint)

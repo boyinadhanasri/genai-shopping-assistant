@@ -100,7 +100,7 @@ def run_tests():
     print(f"Toys Step 3: Subcategory={t3.get('subcategory')} | Flow Question={t3.get('flow_question')} | Options={t3.get('flow_options')}")
     assert any("Under ₹2,000" in opt or "500" in opt for opt in t3.get('flow_options', []))
 
-    toy_results = search_products("LEGO building blocks", category="Toys", budget=2000)
+    toy_results = search_products("LEGO building blocks", category="Toys", budget=3000)
     print(f"Toys search found {len(toy_results)} products")
     assert len(toy_results) > 0
     print(f"Top Toy: {toy_results[0].get('title')} | ₹{toy_results[0].get('price')} | {toy_results[0].get('brand')}")

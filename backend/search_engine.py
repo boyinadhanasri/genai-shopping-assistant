@@ -17,8 +17,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
-import faiss
-from sentence_transformers import SentenceTransformer
 
 from backend.ranking.ranker import (
     calculate_product_score,
@@ -40,11 +38,12 @@ POSSIBLE_DATA_DIRS = [
 ]
 DATA_DIR = next((d for d in POSSIBLE_DATA_DIRS if d.exists()), POSSIBLE_DATA_DIRS[0])
 
-# Cached singletons
-_index: Optional[faiss.Index] = None
+# Cached singletons (lazy loaded on first request)
+_index = None
 _catalog_df: Optional[pd.DataFrame] = None
-_model: Optional[SentenceTransformer] = None
+_model = None
 _embeddings: Optional[np.ndarray] = None
+
 
 PRODUCT_TYPE_SYNONYMS = {
     # Home & Kitchen
@@ -217,19 +216,11 @@ class SearchResult(list):
         }
 
 
-def load_index() -> Tuple[faiss.Index, pd.DataFrame, SentenceTransformer]:
-    """Loads and caches FAISS index, master catalog DataFrame, embeddings, and SentenceTransformer model."""
-    global _index, _catalog_df, _model, _embeddings
-
-    catalog_path = DATA_DIR / "master_catalog.csv"
-    faiss_path = DATA_DIR / "faiss.index"
-    products_index_path = DATA_DIR / "products.index"
-    embeddings_path = DATA_DIR / "embeddings.npy"
-
-    if _model is None:
-        _model = SentenceTransformer(MODEL_NAME)
-
+def get_catalog() -> pd.DataFrame:
+    """Loads and caches the master catalog DataFrame lazily upon first request."""
+    global _catalog_df
     if _catalog_df is None:
+        catalog_path = DATA_DIR / "master_catalog.csv"
         if not catalog_path.exists():
             raise FileNotFoundError(
                 f"Master catalog not found at {catalog_path}. Run scripts/create_master_catalog.py first."
@@ -239,22 +230,60 @@ def load_index() -> Tuple[faiss.Index, pd.DataFrame, SentenceTransformer]:
             _catalog_df["id"] = _catalog_df["product_id"]
         elif "product_id" not in _catalog_df.columns and "id" in _catalog_df.columns:
             _catalog_df["product_id"] = _catalog_df["id"]
+    return _catalog_df
 
+
+def get_model():
+    """Loads and caches SentenceTransformer model lazily only when vector search is invoked."""
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer(MODEL_NAME)
+    return _model
+
+
+def get_faiss_index():
+    """Loads and caches FAISS index lazily upon first vector search."""
+    global _index
     if _index is None:
+        import faiss
+        faiss_path = DATA_DIR / "faiss.index"
+        products_index_path = DATA_DIR / "products.index"
         idx_file = faiss_path if faiss_path.exists() else products_index_path
         if not idx_file.exists():
             raise FileNotFoundError(
                 f"FAISS index not found at {idx_file}. Run scripts/train_embeddings.py first."
             )
         _index = faiss.read_index(str(idx_file))
+    return _index
 
+
+def get_embeddings() -> np.ndarray:
+    """Loads and caches pre-computed embeddings array lazily upon first search."""
+    global _embeddings
     if _embeddings is None:
+        embeddings_path = DATA_DIR / "embeddings.npy"
         if embeddings_path.exists():
             _embeddings = np.load(str(embeddings_path))
         else:
-            _embeddings = np.zeros((len(_catalog_df), 384), dtype=np.float32)
+            cat = get_catalog()
+            _embeddings = np.zeros((len(cat), 384), dtype=np.float32)
+    return _embeddings
 
-    return _index, _catalog_df, _model
+
+def get_search_engine():
+    """Returns the lazy-loaded search engine components."""
+    return {
+        "catalog": get_catalog(),
+        "model": get_model(),
+        "index": get_faiss_index(),
+        "embeddings": get_embeddings(),
+    }
+
+
+def load_index():
+    """Backwards-compatible wrapper that loads FAISS index, catalog DataFrame, and model."""
+    return get_faiss_index(), get_catalog(), get_model()
 
 
 def find_closest_products(
@@ -268,9 +297,10 @@ def find_closest_products(
     sorted by price ascending, nearest above the budget limit.
     NEVER returns products from an unrelated subcategory or random fallbacks.
     """
-    _, catalog, _ = load_index()
+    catalog = get_catalog()
     if catalog is None or len(catalog) == 0:
         return []
+
 
     candidates = catalog.copy()
 
@@ -377,9 +407,13 @@ def get_budget_fallback(
 
         closest_text = "\n".join(closest_lines)
         min_closest_price = math.ceil(closest_items[0]["price"])
+        raw_cat = (subcategory or category or "products").strip().lower()
+        cat_plural = raw_cat if raw_cat.endswith("s") else f"{raw_cat}s"
+        if "phone" in cat_plural:
+            cat_plural = "smartphones"
 
         message = (
-            f"Sorry, I couldn't find any products matching your budget.\n\n"
+            f"Sorry, I couldn't find any matching products under {budget_formatted} (No {cat_plural} found under {budget_formatted}).\n\n"
             f"Closest options:\n"
             f"{closest_text}\n\n"
             f"Would you like to:\n"
@@ -387,15 +421,19 @@ def get_budget_fallback(
             f"2. View closest matches\n"
             f"3. Explore another category"
         )
-        suggestion = f"Closest options start at ₹{min_closest_price:,}."
+        suggestion = f"Lowest available {raw_cat} is ₹{min_closest_price:,}. Closest options start at ₹{min_closest_price:,}."
         alternatives = [
             f"Increase budget to ₹{min_closest_price:,}",
             "View closest matches",
             "Explore another category",
         ]
     else:
+        raw_cat = (subcategory or category or "products").strip().lower()
+        cat_plural = raw_cat if raw_cat.endswith("s") else f"{raw_cat}s"
+        if "phone" in cat_plural:
+            cat_plural = "smartphones"
         message = (
-            f"Sorry, I couldn't find any products matching your budget.\n\n"
+            f"Sorry, I couldn't find any matching products under {budget_formatted} (No {cat_plural} found under {budget_formatted}).\n\n"
             f"Would you like to:\n"
             f"1. Increase budget\n"
             f"2. View closest matches\n"
@@ -406,6 +444,8 @@ def get_budget_fallback(
             f"Increase budget to ₹{int(budget * 1.5):,}" if budget else "Increase budget",
             "Explore another category",
         ]
+
+
 
     return {
         "success": False,
@@ -433,7 +473,7 @@ def search_products(
     Never ranks products outside user budget.
     Applies 6-part weighted scoring engine (40% query match, 20% rating, 15% reviews, 10% brand, 10% budget, 5% popularity).
     """
-    index, catalog, model = load_index()
+    catalog = get_catalog()
     if len(catalog) == 0:
         return SearchResult([], success=True)
 
@@ -566,20 +606,24 @@ def search_products(
         )
 
     # =========================================================================
-    # STEP 4: SEMANTIC SIMILARITY COMPUTATION
+    # STEP 4: SEMANTIC SIMILARITY COMPUTATION (Lazy-loaded Model & Embeddings)
     # =========================================================================
+    model = get_model()
+    embeddings = get_embeddings()
+
     query_vector = model.encode([search_query], normalize_embeddings=True)
     query_vector = np.asarray(query_vector, dtype=np.float32)
 
-    global _embeddings
-    if _embeddings is None or len(_embeddings) != len(catalog):
-        _embeddings = model.encode(
+    if embeddings is None or len(embeddings) != len(catalog):
+        embeddings = model.encode(
             (catalog["title"] + " " + catalog["brand"] + " " + catalog["category"] + " " + catalog["description"]).tolist(),
             normalize_embeddings=True
         )
-        _embeddings = np.asarray(_embeddings, dtype=np.float32)
+        embeddings = np.asarray(embeddings, dtype=np.float32)
+        global _embeddings
+        _embeddings = embeddings
 
-    candidate_vectors = _embeddings[filtered_indices]
+    candidate_vectors = embeddings[filtered_indices]
     sim_scores = np.dot(candidate_vectors, query_vector.T).flatten()
 
     raw_candidates: List[Dict[str, Any]] = []
@@ -648,3 +692,4 @@ def search_products(
 
 
 search = search_products
+find_cheapest_product = find_closest_products

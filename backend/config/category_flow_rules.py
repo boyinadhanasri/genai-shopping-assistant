@@ -35,6 +35,35 @@ SHOPPING_WELCOME_FLOW = {
 }
 
 CATEGORY_SHOPPING_FLOWS: Dict[str, Dict[str, Any]] = {
+    "Electronics": {
+        "display_name": "Electronics & Gadgets",
+        "emoji": "⚡",
+        "steps": [
+            {
+                "step_name": "product_type",
+                "question": "What type of electronics are you looking for?",
+                "options": [
+                    "📱 Smartphone",
+                    "💻 Laptop",
+                    "🎧 Earbuds / Headphones",
+                    "📷 Camera",
+                    "⌚ Smartwatch",
+                    "📺 TV",
+                ],
+            },
+            {
+                "step_name": "budget",
+                "question": "What is your target budget?",
+                "options": [
+                    "Under ₹5,000",
+                    "Under ₹10,000",
+                    "Under ₹25,000",
+                    "Under ₹50,000",
+                    "Premium Flagships",
+                ],
+            },
+        ],
+    },
     "Home & Kitchen": {
         "display_name": "Home & Kitchen",
         "emoji": "🍳",
@@ -163,17 +192,6 @@ CATEGORY_SHOPPING_FLOWS: Dict[str, Dict[str, Any]] = {
         "emoji": "📱",
         "steps": [
             {
-                "step_name": "priority",
-                "question": "What's more important?",
-                "options": [
-                    "📸 Camera & Photography",
-                    "🔋 2-Day Battery Life",
-                    "⚡ Performance & 5G",
-                    "🎮 Gaming & High FPS",
-                    "✨ AI Features & Flagship",
-                ],
-            },
-            {
                 "step_name": "budget",
                 "question": "What's your target smartphone budget?",
                 "options": [
@@ -182,6 +200,17 @@ CATEGORY_SHOPPING_FLOWS: Dict[str, Dict[str, Any]] = {
                     "Under ₹30k",
                     "Under ₹50k",
                     "Premium Flagships",
+                ],
+            },
+            {
+                "step_name": "priority",
+                "question": "What's more important?",
+                "options": [
+                    "📸 Camera & Photography",
+                    "🔋 2-Day Battery Life",
+                    "⚡ Performance & 5G",
+                    "🎮 Gaming & High FPS",
+                    "✨ AI Features & Flagship",
                 ],
             },
         ],
@@ -276,6 +305,11 @@ CATEGORY_SHOPPING_FLOWS: Dict[str, Dict[str, Any]] = {
         "display_name": "Toys & Games",
         "emoji": "🧸",
         "steps": [
+            {
+                "step_name": "age_group",
+                "question": "Who are you shopping for?",
+                "options": ["👶 Toddlers (0-3 yrs)", "🧒 Kids (4-7 yrs)", "👦 Pre-Teens (8-12 yrs)", "🎮 Teens & Adults"],
+            },
             {
                 "step_name": "toy_type",
                 "question": "What type of toys or games are you looking for?",

@@ -25,7 +25,7 @@ from backend.database.db import get_user_by_email, get_user_by_id, create_user
 from backend.security.hashing import hash_password, verify_password
 from backend.ai.query_understanding import understand_query
 from backend.memory.conversation_store import conversation_store
-from backend.search_engine import search_products, load_index, get_budget_fallback
+from backend.search_engine import search_products, get_catalog, get_budget_fallback
 from comparison.comparison_engine import build_comparison
 from backend.services.analytics import log_search_event, get_analytics_summary
 
@@ -207,7 +207,7 @@ def list_products(
     limit: int = Query(20, description="Items limit"),
     offset: int = Query(0, description="Offset index")
 ):
-    _, catalog_df, _ = load_index()
+    catalog_df = get_catalog()
     filtered = catalog_df
     if category:
         filtered = catalog_df[catalog_df["category"].str.lower() == category.strip().lower()]
@@ -239,7 +239,7 @@ def get_trending_products(
     category: Optional[str] = Query(None, description="Category filter"),
     limit: int = Query(8, description="Number of items")
 ):
-    _, catalog_df, _ = load_index()
+    catalog_df = get_catalog()
     df = catalog_df
 
     if category and category.strip().lower() not in ["all", "any", "general"]:
@@ -288,7 +288,7 @@ def get_recommended_products(
     category: Optional[str] = Query(None, description="Category filter"),
     limit: int = Query(12, description="Number of items")
 ):
-    _, catalog_df, _ = load_index()
+    catalog_df = get_catalog()
     df = catalog_df
 
     if category and category.strip().lower() not in ["all", "any", "general"]:
@@ -337,7 +337,7 @@ def get_category_budget_rules():
 # 6. Single Product Details
 @router.get("/api/products/{product_id}")
 def get_product_details(product_id: str):
-    _, catalog_df, _ = load_index()
+    catalog_df = get_catalog()
     match = catalog_df[catalog_df["product_id"] == product_id]
     if match.empty:
         raise HTTPException(status_code=404, detail=f"Product with id '{product_id}' not found")
@@ -427,7 +427,7 @@ def compare_products_endpoint(
     request: CompareRequest,
     current_user: dict = Depends(get_current_user_dependency)
 ) -> CompareResponse:
-    _, catalog_df, _ = load_index()
+    catalog_df = get_catalog()
     selected_products: List[Product] = []
 
     for pid in request.product_ids:
@@ -513,8 +513,9 @@ def chat_assistant_endpoint(
 
     # Check if query needs clarification for a broad category without product type
     needs_clarification = effective_params.get("needs_clarification", False) or parsed.get("needs_clarification", False)
-    if subcategory:
+    if subcategory or (budget is not None and category and category not in ["Electronics", "General"]):
         needs_clarification = False
+
 
     if needs_clarification:
         clarification_msg = (

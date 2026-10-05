@@ -136,7 +136,13 @@ class ConversationMemoryStore:
         new_cat = parsed.get("category")
         if new_cat and new_cat != "General":
             norm_new_cat = normalize_category_name(new_cat)
-            if prefs.category and normalize_category_name(prefs.category) != norm_new_cat:
+            parent_refinements = {
+                "General": {"Electronics", "Smartphones", "Laptops", "Audio", "Cameras", "Fashion", "Shoes", "Beauty", "Home & Kitchen", "Books", "Sports", "Toys", "Mobiles"},
+                "Electronics": {"Smartphones", "Laptops", "Audio", "Cameras", "Electronics", "Mobiles"},
+                "Fashion": {"Fashion", "Shoes"},
+            }
+            is_refinement = prefs.category in parent_refinements and norm_new_cat in parent_refinements[prefs.category]
+            if prefs.category and normalize_category_name(prefs.category) != norm_new_cat and not is_refinement:
                 # Switched category: reset category-specific filters
                 if not parsed.get("brand"):
                     prefs.brand = None
@@ -148,6 +154,7 @@ class ConversationMemoryStore:
                 prefs.gender = None
                 prefs.active_flow_step = 0
             prefs.category = norm_new_cat
+
 
         # Subcategory updates
         if parsed.get("subcategory"):
@@ -213,7 +220,7 @@ class ConversationMemoryStore:
         if not compound_query:
             compound_query = parsed.get("raw_query") or (prefs.category or "products")
 
-        # Determine category flow progression if user is in an active flow
+        # Determine category flow progression if user is in an active flow or exploring category
         norm_cat = normalize_category_name(prefs.category)
         flow_cfg = CATEGORY_SHOPPING_FLOWS.get(norm_cat)
 
@@ -221,7 +228,14 @@ class ConversationMemoryStore:
         next_flow_options = []
         flow_in_progress = False
 
-        if flow_cfg and not parsed.get("compare_targets"):
+        is_category_exploration = (
+            parsed.get("intent") == "category_exploration"
+            or prefs.pending_clarification
+            or prefs.active_flow_step > 0
+            or not (parsed.get("subcategory") or parsed.get("brand"))
+        )
+
+        if flow_cfg and not parsed.get("compare_targets") and is_category_exploration:
             if norm_cat == "Home & Kitchen":
                 if not prefs.subcategory:
                     flow_in_progress = True
@@ -263,14 +277,15 @@ class ConversationMemoryStore:
                     next_flow_options = flow_cfg["steps"][1]["options"]
 
             elif norm_cat == "Smartphones":
-                if not prefs.priority and not (parsed.get("subcategory") and parsed.get("brand")):
+                if prefs.budget is None:
                     flow_in_progress = True
                     next_flow_question = flow_cfg["steps"][0]["question"]
                     next_flow_options = flow_cfg["steps"][0]["options"]
-                elif prefs.budget is None:
+                elif not prefs.priority and not (parsed.get("subcategory") and parsed.get("brand")):
                     flow_in_progress = True
                     next_flow_question = flow_cfg["steps"][1]["question"]
                     next_flow_options = flow_cfg["steps"][1]["options"]
+
 
             elif norm_cat in ["Shoes", "Fashion"]:
                 if not prefs.subcategory:
@@ -302,6 +317,26 @@ class ConversationMemoryStore:
                     flow_in_progress = True
                     next_flow_question = flow_cfg["steps"][1]["question"]
                     next_flow_options = flow_cfg["steps"][1]["options"]
+
+            elif norm_cat == "Toys":
+                if not prefs.purpose and not prefs.gender:
+                    flow_in_progress = True
+                    next_flow_question = flow_cfg["steps"][0]["question"]
+                    next_flow_options = flow_cfg["steps"][0]["options"]
+                elif not prefs.subcategory:
+                    flow_in_progress = True
+                    next_flow_question = flow_cfg["steps"][1]["question"]
+                    next_flow_options = flow_cfg["steps"][1]["options"]
+                elif prefs.budget is None:
+                    flow_in_progress = True
+                    next_flow_question = flow_cfg["steps"][2]["question"]
+                    next_flow_options = flow_cfg["steps"][2]["options"]
+
+        if flow_in_progress:
+            prefs.active_flow_step += 1
+        else:
+            prefs.active_flow_step = 0
+
 
         return {
             "query": compound_query,

@@ -18,6 +18,7 @@ def score_product(product: Product, slots: QuerySlots, semantic_rank_score: floa
         "title": product.title,
         "category": product.category,
         "subcategory": getattr(product, "subcategory", ""),
+        "availability": getattr(product, "availability", "In stock"),
     }
     res = calculate_product_score(
         product=prod_dict,
@@ -25,4 +26,8 @@ def score_product(product: Product, slots: QuerySlots, semantic_rank_score: floa
         raw_query=slots.raw_query,
         semantic_sim=semantic_rank_score
     )
-    return res["final_score"] / 100.0
+    score = res["final_score"] / 100.0
+    if getattr(product, "availability", "").strip().lower() == "out of stock":
+        score *= 0.5
+    return score
+

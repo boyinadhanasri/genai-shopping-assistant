@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://genai-shopping-assistant-backend.onrender.com/api/$1"
+    }
+  ]
+}

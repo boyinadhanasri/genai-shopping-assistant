@@ -12,17 +12,20 @@ BRAND_SCORES: Dict[str, float] = {
     # Top Tier Tech / Premium Brands (10)
     "APPLE": 10.0,
     "SAMSUNG": 10.0,
-    "SONY": 10.0,
+    "SONY": 9.0,
     
     # Tier 1 Brands (9)
     "DELL": 9.0,
-    "HP": 9.0,
     "LENOVO": 9.0,
-    "ASUS": 9.0,
     "ONEPLUS": 9.0,
     "CANON": 9.0,
     "NIKON": 9.0,
     "BOSE": 9.0,
+    "HP": 8.0,
+    "ASUS": 8.0,
+    "ACER": 7.0,
+    "BOAT": 7.0,
+    "REALME": 7.0,
     "NIKE": 9.0,
     "ADIDAS": 9.0,
     "PUMA": 9.0,
@@ -115,7 +118,7 @@ BRAND_SCORES: Dict[str, float] = {
 }
 
 # Default score for unlisted or unknown brands
-DEFAULT_BRAND_SCORE: float = 5.0
+DEFAULT_BRAND_SCORE: float = 4.0
 
 
 def get_brand_score(brand: str) -> float:
